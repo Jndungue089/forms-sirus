@@ -1,28 +1,32 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { useData } from "./DataContext";
+import { api } from "../lib/api";
 
 interface AuthContextValue {
   participanteId: string | null;
-  login: (id: string) => boolean;
+  isAdmin: boolean;
+  login: (id: string, senha: string) => Promise<boolean>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { getParticipante } = useData();
   const [participanteId, setParticipanteId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const login = (id: string) => {
-    const encontrado = getParticipante(id.trim());
-    if (!encontrado) return false;
-    setParticipanteId(encontrado.id);
-    return true;
+  const login = async (id: string, senha: string) => {
+    const res = await api.login(id.trim(), senha);
+    setParticipanteId(res.participanteId);
+    setIsAdmin(res.isAdmin);
+    return res.isAdmin;
   };
 
-  const logout = () => setParticipanteId(null);
+  const logout = () => {
+    setParticipanteId(null);
+    setIsAdmin(false);
+  };
 
-  return <AuthContext.Provider value={{ participanteId, login, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ participanteId, isAdmin, login, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

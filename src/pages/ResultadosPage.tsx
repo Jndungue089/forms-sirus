@@ -7,12 +7,14 @@ export default function ResultadosPage() {
   const [data, setData] = useState("");
   const [viewsTiktok, setViewsTiktok] = useState("");
   const [viewsYoutube, setViewsYoutube] = useState("");
+  const [viewsFacebook, setViewsFacebook] = useState("");
   const [cortes, setCortes] = useState("");
   const [links, setLinks] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [enviado, setEnviado] = useState(false);
+  const [enviando, setEnviando] = useState(false);
 
-  const submeter = (e: FormEvent) => {
+  const submeter = async (e: FormEvent) => {
     e.preventDefault();
     const participante = getParticipante(id.trim());
     if (!participante) {
@@ -20,21 +22,30 @@ export default function ResultadosPage() {
       return;
     }
     setErro(null);
-    addRegistro({
-      id: participante.id,
-      data,
-      viewsTiktok: Number(viewsTiktok) || 0,
-      viewsYoutube: Number(viewsYoutube) || 0,
-      cortes: Number(cortes) || 0,
-      links,
-    });
-    setEnviado(true);
-    setId("");
-    setData("");
-    setViewsTiktok("");
-    setViewsYoutube("");
-    setCortes("");
-    setLinks("");
+    setEnviando(true);
+    try {
+      await addRegistro({
+        participanteId: participante.id,
+        data,
+        viewsTiktok: Number(viewsTiktok) || 0,
+        viewsYoutube: Number(viewsYoutube) || 0,
+        viewsFacebook: Number(viewsFacebook) || 0,
+        cortes: Number(cortes) || 0,
+        links,
+      });
+      setEnviado(true);
+      setId("");
+      setData("");
+      setViewsTiktok("");
+      setViewsYoutube("");
+      setViewsFacebook("");
+      setCortes("");
+      setLinks("");
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Não foi possível enviar os resultados.");
+    } finally {
+      setEnviando(false);
+    }
   };
 
   if (enviado) {
@@ -74,6 +85,10 @@ export default function ResultadosPage() {
             <input type="number" value={viewsYoutube} onChange={(e) => setViewsYoutube(e.target.value)} min={0} />
           </label>
           <label>
+            Views Facebook
+            <input type="number" value={viewsFacebook} onChange={(e) => setViewsFacebook(e.target.value)} min={0} />
+          </label>
+          <label>
             Nº de cortes publicados
             <input type="number" value={cortes} onChange={(e) => setCortes(e.target.value)} min={0} />
           </label>
@@ -81,8 +96,8 @@ export default function ResultadosPage() {
             Links dos cortes (opcional)
             <textarea value={links} onChange={(e) => setLinks(e.target.value)} rows={3} />
           </label>
-          <button className="btn" type="submit" disabled={!id || !data}>
-            Enviar resultados
+          <button className="btn" type="submit" disabled={!id || !data || enviando}>
+            {enviando ? "A enviar…" : "Enviar resultados"}
           </button>
         </form>
       </div>

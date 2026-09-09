@@ -1,8 +1,10 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useData } from "../context/DataContext";
 
 export default function Layout() {
-  const { participanteId, logout } = useAuth();
+  const { participanteId, isAdmin, logout } = useAuth();
+  const { loading, error } = useData();
   const navigate = useNavigate();
 
   const sair = () => {
@@ -22,7 +24,11 @@ export default function Layout() {
           <NavLink to="/resultados">Enviar Resultados</NavLink>
           {participanteId ? (
             <>
-              <NavLink to="/area">Minha Área</NavLink>
+              {isAdmin ? (
+                <NavLink to="/admin">Administração</NavLink>
+              ) : (
+                <NavLink to="/area">Minha Área</NavLink>
+              )}
               <button className="link-button" onClick={sair}>
                 Sair ({participanteId})
               </button>
@@ -32,7 +38,21 @@ export default function Layout() {
           )}
         </div>
       </nav>
-      <Outlet />
+      {loading ? (
+        <div className="page">
+          <p className="hint centro">A carregar dados do servidor…</p>
+        </div>
+      ) : error ? (
+        <div className="page">
+          <div className="form-card confirmacao">
+            <h2>Não foi possível ligar ao servidor</h2>
+            <p className="hint">{error}</p>
+            <p className="hint">Confirma que o backend está a correr (npm run start em /server).</p>
+          </div>
+        </div>
+      ) : (
+        <Outlet />
+      )}
     </div>
   );
 }

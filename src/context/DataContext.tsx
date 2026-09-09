@@ -1,70 +1,136 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import {
-  participantes as participantesIniciais,
-  registros as registrosIniciais,
-  type Participante,
-  type Registro,
-  type RankingRow,
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { api } from "../lib/api";
+import type {
+  EventoStats,
+  HistoricoParticipante,
+  NovoParticipante,
+  NovoRegistro,
+  Participante,
+  RankingRow,
+  Registro,
 } from "../data";
 
-interface NovoParticipante {
-  nome: string;
-  idade: number;
-  tiktok: string;
-  youtube: string;
-  whatsapp: string;
-}
-
-interface NovoRegistro {
-  id: string;
-  data: string;
-  viewsTiktok: number;
-  viewsYoutube: number;
-  cortes: number;
-  links?: string;
-}
+const EVENTO_VAZIO: EventoStats = { nome: "", liga: "", ultimaAtualizacao: "" };
 
 interface DataContextValue {
+  loading: boolean;
+  error: string | null;
   participantes: Participante[];
   registros: Registro[];
   ranking: RankingRow[];
-  addParticipante: (p: NovoParticipante) => string;
-  addRegistro: (r: NovoRegistro) => void;
+  historico: Record<string, HistoricoParticipante>;
+  eventoStats: EventoStats;
+  inscricoesAbertas: boolean;
+  limiteParticipantes: number | null;
+  inscricoesFechadasManualmente: boolean;
   getParticipante: (id: string) => Participante | undefined;
+  addParticipante: (p: NovoParticipante) => Promise<string>;
+  updateParticipante: (id: string, patch: Partial<NovoParticipante> & { status?: Participante["status"] }) => Promise<void>;
+  deleteParticipante: (id: string) => Promise<void>;
+  addRegistro: (r: NovoRegistro) => Promise<void>;
+  updateRegistro: (id: number, patch: Partial<NovoRegistro>) => Promise<void>;
+  deleteRegistro: (id: number) => Promise<void>;
+  updateHistorico: (participanteId: string, h: HistoricoParticipante) => Promise<void>;
+  updateConfiguracoes: (patch: { limiteParticipantes?: number | null; inscricoesFechadasManualmente?: boolean }) => Promise<void>;
+  updateEventoStats: (patch: Partial<EventoStats>) => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
 
-function proximoId(lista: Participante[]): string {
-  const numeros = lista.map((p) => parseInt(p.id.replace("VRS", ""), 10)).filter((n) => !isNaN(n));
-  const proximo = (numeros.length ? Math.max(...numeros) : 0) + 1;
-  return `VRS${String(proximo).padStart(3, "0")}`;
-}
-
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [participantes, setParticipantes] = useState<Participante[]>(participantesIniciais);
-  const [registros, setRegistros] = useState<Registro[]>(registrosIniciais);
+  const [participantes, setParticipantes] = useState<Participante[]>([]);
+  const [registros, setRegistros] = useState<Registro[]>([]);
+  const [historico, setHistorico] = useState<Record<string, HistoricoParticipante>>({});
+  const [eventoStats, setEventoStats] = useState<EventoStats>(EVENTO_VAZIO);
+  const [limiteParticipantes, setLimiteParticipantes] = useState<number | null>(null);
+  const [inscricoesFechadasManualmente, setInscricoesFechadasManualmente] = useState(false);
+  const [inscricoesAbertas, setInscricoesAbertas] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const addParticipante = (novo: NovoParticipante) => {
-    const id = proximoId(participantes);
-    setParticipantes((atual) => [...atual, { id, status: "Ativo", ...novo }]);
-    return id;
+  const refresh = async () => {
+    const [p, r, h, ev, cfg] = await Promise.all([
+      api.getParticipantes(),
+      api.getRegistros(),
+      api.getHistorico(),
+      api.getEvento(),
+      api.getConfiguracoes(),
+    ]);
+    setParticipantes(p);
+    setRegistros(r);
+    setHistorico(h);
+    setEventoStats(ev);
+    setLimiteParticipantes(cfg.limiteParticipantes);
+    setInscricoesFechadasManualmente(cfg.inscricoesFechadasManualmente);
+    setInscricoesAbertas(cfg.inscricoesAbertas);
+    setError(null);
   };
 
-  const addRegistro = (novo: NovoRegistro) => {
-    setRegistros((atual) => [...atual, novo]);
-  };
+  useEffect(() => {
+    setLoading(true);
+    refresh()
+      .catch((e) => setError(e instanceof Error ? e.message : "Não foi possível ligar ao servidor."))
+      .finally(() => setLoading(false));
+  }, []);
 
   const getParticipante = (id: string) => participantes.find((p) => p.id.toLowerCase() === id.toLowerCase());
 
+  const addParticipante = async (novo: NovoParticipante) => {
+    const criado = await api.addParticipante(novo);
+    await refresh();
+    return criado.id;
+  };
+
+  const updateParticipante = async (id: string, patch: Partial<NovoParticipante> & { status?: Participante["status"] }) => {
+    await api.updateParticipante(id, patch);
+    await refresh();
+  };
+
+  const deleteParticipante = async (id: string) => {
+    await api.deleteParticipante(id);
+    await refresh();
+  };
+
+  const addRegistro = async (novo: NovoRegistro) => {
+    await api.addRegistro(novo);
+    await refresh();
+  };
+
+  const updateRegistro = async (id: number, patch: Partial<NovoRegistro>) => {
+    await api.updateRegistro(id, patch);
+    await refresh();
+  };
+
+  const deleteRegistro = async (id: number) => {
+    await api.deleteRegistro(id);
+    await refresh();
+  };
+
+  const updateHistorico = async (participanteId: string, h: HistoricoParticipante) => {
+    await api.setHistorico(participanteId, h);
+    await refresh();
+  };
+
+  const updateConfiguracoes = async (patch: { limiteParticipantes?: number | null; inscricoesFechadasManualmente?: boolean }) => {
+    await api.updateConfiguracoes(patch);
+    await refresh();
+  };
+
+  const updateEventoStats = async (patch: Partial<EventoStats>) => {
+    await api.updateEvento(patch);
+    await refresh();
+  };
+
   const ranking = useMemo<RankingRow[]>(() => {
-    const agregados = new Map<string, { viewsTiktok: number; viewsYoutube: number; conteudos: number }>();
+    const agregados = new Map<string, { viewsTiktok: number; viewsYoutube: number; viewsFacebook: number; conteudos: number }>();
     for (const r of registros) {
-      const atual = agregados.get(r.id) ?? { viewsTiktok: 0, viewsYoutube: 0, conteudos: 0 };
+      const atual = agregados.get(r.participanteId) ?? { viewsTiktok: 0, viewsYoutube: 0, viewsFacebook: 0, conteudos: 0 };
       atual.viewsTiktok += r.viewsTiktok;
       atual.viewsYoutube += r.viewsYoutube;
+      atual.viewsFacebook += r.viewsFacebook;
       atual.conteudos += r.cortes;
-      agregados.set(r.id, atual);
+      agregados.set(r.participanteId, atual);
     }
 
     return participantes
@@ -76,7 +142,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           nome: p.nome,
           viewsTiktok: a.viewsTiktok,
           viewsYoutube: a.viewsYoutube,
-          total: a.viewsTiktok + a.viewsYoutube,
+          viewsFacebook: a.viewsFacebook,
+          total: a.viewsTiktok + a.viewsYoutube + a.viewsFacebook,
           conteudos: a.conteudos,
         };
       })
@@ -85,7 +152,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [participantes, registros]);
 
   return (
-    <DataContext.Provider value={{ participantes, registros, ranking, addParticipante, addRegistro, getParticipante }}>
+    <DataContext.Provider
+      value={{
+        loading,
+        error,
+        participantes,
+        registros,
+        ranking,
+        historico,
+        eventoStats,
+        inscricoesAbertas,
+        limiteParticipantes,
+        inscricoesFechadasManualmente,
+        getParticipante,
+        addParticipante,
+        updateParticipante,
+        deleteParticipante,
+        addRegistro,
+        updateRegistro,
+        deleteRegistro,
+        updateHistorico,
+        updateConfiguracoes,
+        updateEventoStats,
+        refresh,
+      }}
+    >
       {children}
     </DataContext.Provider>
   );
