@@ -1,4 +1,5 @@
-// Tipos partilhados com a API — os dados reais vivem no Postgres, servidos por /server.
+// Tipos partilhados com a camada de dados (src/lib/api.ts) — ver ali a nota sobre
+// a base SQLite local ao browser usada para demo, vs. o backend real em /server.
 
 export interface Participante {
   id: string;
