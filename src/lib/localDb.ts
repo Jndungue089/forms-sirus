@@ -304,6 +304,37 @@ export const localApi = {
     return { ok: true, isAdmin: false, participanteId: participante.id };
   },
 
+  async alterarSenhaAdmin(adminId: string, senhaAtual: string, novaSenha: string) {
+    const db = await getDb();
+    const cleanId = (adminId || "ADMIN").trim();
+
+    if (!senhaAtual || !novaSenha) {
+      throw new Error("Preenche todos os campos de senha.");
+    }
+    if (novaSenha.length < 3) {
+      throw new Error("A nova senha deve ter pelo menos 3 caracteres.");
+    }
+
+    const admin = queryOne<{ id: string; senha_hash: string }>(
+      db,
+      "SELECT id, senha_hash FROM admins WHERE UPPER(id) = UPPER(?)",
+      [cleanId]
+    );
+
+    if (!admin) {
+      throw new Error("Administrador não encontrado.");
+    }
+
+    if (!bcrypt.compareSync(senhaAtual, admin.senha_hash)) {
+      throw new Error("A senha atual está incorreta.");
+    }
+
+    const novaHash = bcrypt.hashSync(novaSenha, 8);
+    run(db, "UPDATE admins SET senha_hash = ? WHERE UPPER(id) = UPPER(?)", [novaHash, cleanId]);
+    persist(db);
+    return { ok: true };
+  },
+
   async getParticipantes() {
     const db = await getDb();
     return queryAll<any>(db, "SELECT * FROM participantes ORDER BY id").map(toParticipanteApi);

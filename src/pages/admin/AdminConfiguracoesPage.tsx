@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useData } from "../../context/DataContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function AdminConfiguracoesPage() {
   const {
@@ -11,6 +12,7 @@ export default function AdminConfiguracoesPage() {
     updateConfiguracoes,
     participantes,
   } = useData();
+  const { alterarSenhaAdmin } = useAuth();
 
   const [nome, setNome] = useState(eventoStats.nome);
   const [liga, setLiga] = useState(eventoStats.liga);
@@ -18,6 +20,13 @@ export default function AdminConfiguracoesPage() {
   const [limiteInput, setLimiteInput] = useState(limiteParticipantes?.toString() ?? "");
   const [salvandoEvento, setSalvandoEvento] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarNovaSenha, setConfirmarNovaSenha] = useState("");
+  const [salvandoSenha, setSalvandoSenha] = useState(false);
+  const [erroSenha, setErroSenha] = useState<string | null>(null);
+  const [sucessoSenha, setSucessoSenha] = useState<string | null>(null);
 
   const guardarEvento = async (e: FormEvent) => {
     e.preventDefault();
@@ -49,6 +58,42 @@ export default function AdminConfiguracoesPage() {
       await updateConfiguracoes({ inscricoesFechadasManualmente: !inscricoesFechadasManualmente });
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Não foi possível alterar o estado das inscrições.");
+    }
+  };
+
+  const guardarSenhaAdmin = async (e: FormEvent) => {
+    e.preventDefault();
+    setErroSenha(null);
+    setSucessoSenha(null);
+
+    if (!senhaAtual || !novaSenha || !confirmarNovaSenha) {
+      setErroSenha("Preenche todos os campos.");
+      return;
+    }
+    if (novaSenha.length < 3) {
+      setErroSenha("A nova senha deve ter pelo menos 3 caracteres.");
+      return;
+    }
+    if (novaSenha !== confirmarNovaSenha) {
+      setErroSenha("As senhas não coincidem.");
+      return;
+    }
+    if (senhaAtual === novaSenha) {
+      setErroSenha("A nova senha deve ser diferente da senha atual.");
+      return;
+    }
+
+    setSalvandoSenha(true);
+    try {
+      await alterarSenhaAdmin(senhaAtual, novaSenha);
+      setSucessoSenha("Senha de administrador alterada com sucesso!");
+      setSenhaAtual("");
+      setNovaSenha("");
+      setConfirmarNovaSenha("");
+    } catch (err) {
+      setErroSenha(err instanceof Error ? err.message : "Não foi possível alterar a senha.");
+    } finally {
+      setSalvandoSenha(false);
     }
   };
 
@@ -106,6 +151,59 @@ export default function AdminConfiguracoesPage() {
           </button>
         </form>
       </div>
+
+      <div className="admin-section-head">
+        <h2>Segurança</h2>
+      </div>
+      <form className="form-card admin-form-card" onSubmit={guardarSenhaAdmin}>
+        <label>
+          Senha atual
+          <input
+            type="password"
+            placeholder="A tua senha atual"
+            value={senhaAtual}
+            onChange={(e) => {
+              setSenhaAtual(e.target.value);
+              if (erroSenha) setErroSenha(null);
+              if (sucessoSenha) setSucessoSenha(null);
+            }}
+            required
+          />
+        </label>
+        <label>
+          Nova senha
+          <input
+            type="password"
+            placeholder="Nova senha (mínimo de 3 caracteres)"
+            value={novaSenha}
+            onChange={(e) => {
+              setNovaSenha(e.target.value);
+              if (erroSenha) setErroSenha(null);
+              if (sucessoSenha) setSucessoSenha(null);
+            }}
+            required
+          />
+        </label>
+        <label>
+          Confirmar nova senha
+          <input
+            type="password"
+            placeholder="Confirma a nova senha"
+            value={confirmarNovaSenha}
+            onChange={(e) => {
+              setConfirmarNovaSenha(e.target.value);
+              if (erroSenha) setErroSenha(null);
+              if (sucessoSenha) setSucessoSenha(null);
+            }}
+            required
+          />
+        </label>
+        {erroSenha && <p className="erro">{erroSenha}</p>}
+        {sucessoSenha && <p className="sucesso">{sucessoSenha}</p>}
+        <button className="btn" type="submit" disabled={salvandoSenha}>
+          {salvandoSenha ? "A atualizar…" : "Alterar senha"}
+        </button>
+      </form>
     </div>
   );
 }

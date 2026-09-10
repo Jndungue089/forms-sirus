@@ -654,6 +654,12 @@ td.total {
   margin: 0;
 }
 
+.sucesso {
+  color: #4ade80;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
 .hint {
   color: var(--muted);
   font-size: 0.8rem;

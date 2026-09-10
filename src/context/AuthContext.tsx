@@ -6,6 +6,7 @@ interface AuthContextValue {
   isAdmin: boolean;
   login: (id: string, senha: string) => Promise<boolean>;
   logout: () => void;
+  alterarSenhaAdmin: (senhaAtual: string, novaSenha: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -26,7 +27,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAdmin(false);
   };
 
-  return <AuthContext.Provider value={{ participanteId, isAdmin, login, logout }}>{children}</AuthContext.Provider>;
+  const alterarSenhaAdmin = async (senhaAtual: string, novaSenha: string) => {
+    await api.alterarSenhaAdmin(participanteId || "ADMIN", senhaAtual, novaSenha);
+  };
+
+  return (
+    <AuthContext.Provider value={{ participanteId, isAdmin, login, logout, alterarSenhaAdmin }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
