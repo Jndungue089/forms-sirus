@@ -5,7 +5,11 @@ const fmt = (n: number) => n.toLocaleString("pt-PT");
 
 type Tab = "ranking" | "participantes" | "registros";
 
-export default function PainelEvento() {
+interface PainelEventoProps {
+  mostrarIds?: boolean;
+}
+
+export default function PainelEvento({ mostrarIds = true }: PainelEventoProps) {
   const { participantes, ranking, eventoStats, historico } = useData();
   const [tab, setTab] = useState<Tab>("ranking");
 
@@ -89,7 +93,7 @@ export default function PainelEvento() {
             <table className="participantes-table">
               <thead>
                 <tr>
-                  <th>ID</th>
+                  {mostrarIds && <th>ID</th>}
                   <th>Nome</th>
                   <th>Idade</th>
                   <th>TikTok</th>
@@ -101,7 +105,7 @@ export default function PainelEvento() {
               <tbody>
                 {participantes.map((p) => (
                   <tr key={p.id}>
-                    <td data-label="ID">{p.id}</td>
+                    {mostrarIds && <td data-label="ID">{p.id}</td>}
                     <td className="nome" data-label="Nome">
                       {p.nome}
                     </td>
@@ -127,7 +131,7 @@ export default function PainelEvento() {
                   <div className="historico-card" key={p.id}>
                     <div className="historico-card-head">
                       <span className="historico-nome">{p.nome}</span>
-                      <span className="historico-id">{p.id}</span>
+                      {mostrarIds && <span className="historico-id">{p.id}</span>}
                     </div>
                     <div className="historico-stats">
                       <div className="historico-stat">
