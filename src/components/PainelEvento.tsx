@@ -7,14 +7,15 @@ type Tab = "ranking" | "participantes" | "registros";
 
 interface PainelEventoProps {
   mostrarIds?: boolean;
+  mostrarParticipantes?: boolean;
 }
 
-export default function PainelEvento({ mostrarIds = true }: PainelEventoProps) {
+export default function PainelEvento({ mostrarIds = true, mostrarParticipantes = true }: PainelEventoProps) {
   const { participantes, ranking, eventoStats, historico } = useData();
   const [tab, setTab] = useState<Tab>("ranking");
 
   const totalViews = ranking.reduce((acc, r) => acc + r.total, 0);
-  const totalConteudos = ranking.reduce((acc, r) => acc + r.conteudos, 0);
+  const totalCortes = ranking.reduce((acc, r) => acc + r.conteudos, 0);
 
   return (
     <div className="page">
@@ -24,13 +25,15 @@ export default function PainelEvento({ mostrarIds = true }: PainelEventoProps) {
           <h1>{eventoStats.nome}</h1>
         </div>
         <div className="stats">
+          {mostrarParticipantes && (
+            <div className="stat">
+              <span className="stat-value">{fmt(participantes.length)}</span>
+              <span className="stat-label">Participantes</span>
+            </div>
+          )}
           <div className="stat">
-            <span className="stat-value">{fmt(participantes.length)}</span>
-            <span className="stat-label">Participantes</span>
-          </div>
-          <div className="stat">
-            <span className="stat-value">{fmt(totalConteudos)}</span>
-            <span className="stat-label">Conteúdos</span>
+            <span className="stat-value">{fmt(totalCortes)}</span>
+            <span className="stat-label">Cortes</span>
           </div>
           <div className="stat">
             <span className="stat-value">{fmt(totalViews)}</span>
@@ -64,7 +67,7 @@ export default function PainelEvento({ mostrarIds = true }: PainelEventoProps) {
                   <th>Views YouTube</th>
                   <th>Views Facebook</th>
                   <th>Total</th>
-                  <th>Conteúdos</th>
+                  <th>Cortes</th>
                 </tr>
               </thead>
               <tbody>
@@ -82,7 +85,7 @@ export default function PainelEvento({ mostrarIds = true }: PainelEventoProps) {
                     <td className="total" data-label="Total">
                       {fmt(r.total)}
                     </td>
-                    <td data-label="Conteúdos">{r.conteudos}</td>
+                    <td data-label="Cortes">{r.conteudos}</td>
                   </tr>
                 ))}
               </tbody>
@@ -145,8 +148,12 @@ export default function PainelEvento({ mostrarIds = true }: PainelEventoProps) {
                         <span className="historico-label">Melhor posição</span>
                       </div>
                       <div className="historico-stat">
+                        <span className="historico-valor">{fmt(linha?.total ?? 0)}</span>
+                        <span className="historico-label">Views</span>
+                      </div>
+                      <div className="historico-stat">
                         <span className="historico-valor">{linha?.conteudos ?? 0}</span>
-                        <span className="historico-label">Cortes postados</span>
+                        <span className="historico-label">Cortes</span>
                       </div>
                     </div>
                   </div>

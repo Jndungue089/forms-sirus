@@ -19,7 +19,14 @@ function App() {
       <Route element={<Layout />}>
         <Route index element={<RankingPage />} />
         <Route path="inscricao" element={<InscricaoPage />} />
-        <Route path="resultados" element={<ResultadosPage />} />
+        <Route
+          path="resultados"
+          element={
+            <RequireAuth>
+              <ResultadosPage />
+            </RequireAuth>
+          }
+        />
         <Route path="login" element={<LoginPage />} />
         <Route
           path="area"

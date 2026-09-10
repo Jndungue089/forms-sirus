@@ -403,8 +403,9 @@ export const localApi = {
       `INSERT INTO registros (participante_id, data, views_tiktok, views_youtube, views_facebook, cortes, links) VALUES (?,?,?,?,?,?,?)`,
       [data.participanteId, data.data, data.viewsTiktok, data.viewsYoutube, data.viewsFacebook, data.cortes, data.links || null]
     );
-    persist(db);
+    // Ler o registo pelo last_insert_rowid() TEM de acontecer antes de persist() — db.export() reinicia esse valor.
     const row = queryOne<any>(db, "SELECT * FROM registros WHERE id = last_insert_rowid()");
+    persist(db);
     return toRegistroApi(row);
   },
 

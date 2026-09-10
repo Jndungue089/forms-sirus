@@ -1,9 +1,13 @@
 import { useState, type FormEvent } from "react";
 import { useData } from "../context/DataContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function ResultadosPage() {
   const { addRegistro, getParticipante } = useData();
-  const [id, setId] = useState("");
+  const { participanteId, isAdmin } = useAuth();
+  const participanteAtual = !isAdmin ? getParticipante(participanteId ?? "") : null;
+  const [idInput, setIdInput] = useState("");
+  const idAlvo = isAdmin ? idInput : participanteId ?? "";
   const [data, setData] = useState("");
   const [viewsTiktok, setViewsTiktok] = useState("");
   const [viewsYoutube, setViewsYoutube] = useState("");
@@ -16,9 +20,9 @@ export default function ResultadosPage() {
 
   const submeter = async (e: FormEvent) => {
     e.preventDefault();
-    const participante = getParticipante(id.trim());
+    const participante = getParticipante(idAlvo.trim());
     if (!participante) {
-      setErro("ID de participante não encontrado. Confere o teu ID de inscrição.");
+      setErro("ID de participante não encontrado. Confere o ID.");
       return;
     }
     setErro(null);
@@ -34,7 +38,7 @@ export default function ResultadosPage() {
         links,
       });
       setEnviado(true);
-      setId("");
+      setIdInput("");
       setData("");
       setViewsTiktok("");
       setViewsYoutube("");
@@ -67,10 +71,16 @@ export default function ResultadosPage() {
       <div className="form-card">
         <h2>Evento — Registo de Resultados</h2>
         <form onSubmit={submeter}>
-          <label>
-            ID do participante
-            <input value={id} onChange={(e) => setId(e.target.value)} placeholder="VRS001" required />
-          </label>
+          {isAdmin ? (
+            <label>
+              ID do participante
+              <input value={idInput} onChange={(e) => setIdInput(e.target.value)} placeholder="VRS001" required />
+            </label>
+          ) : (
+            <p className="hint">
+              A enviar resultados como <strong>{participanteAtual?.nome ?? participanteId}</strong> ({participanteId})
+            </p>
+          )}
           {erro && <p className="erro">{erro}</p>}
           <label>
             Data
@@ -96,7 +106,7 @@ export default function ResultadosPage() {
             Links dos cortes (opcional)
             <textarea value={links} onChange={(e) => setLinks(e.target.value)} rows={3} />
           </label>
-          <button className="btn" type="submit" disabled={!id || !data || enviando}>
+          <button className="btn" type="submit" disabled={!idAlvo || !data || enviando}>
             {enviando ? "A enviar…" : "Enviar resultados"}
           </button>
         </form>

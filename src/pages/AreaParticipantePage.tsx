@@ -14,8 +14,10 @@ export default function AreaParticipantePage() {
   return (
     <div className="page">
       <header className="hero">
-        <p className="hero-liga">Minha Área</p>
-        <h1>{participante?.nome ?? participanteId}</h1>
+        <div className="hero-brand">
+          <p className="hero-liga">Minha Área</p>
+          <h1>{participante?.nome ?? participanteId}</h1>
+        </div>
       </header>
 
       <main className="area-participante">
@@ -40,7 +42,7 @@ export default function AreaParticipantePage() {
               </div>
               <div className="stat">
                 <span className="stat-value">{minhaLinha.conteudos}</span>
-                <span className="stat-label">Conteúdos</span>
+                <span className="stat-label">Cortes</span>
               </div>
             </div>
             {acima && (

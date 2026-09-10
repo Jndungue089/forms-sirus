@@ -21,9 +21,9 @@ export default function Layout() {
             Ranking
           </NavLink>
           <NavLink to="/inscricao">Inscrição</NavLink>
-          <NavLink to="/resultados">Enviar Resultados</NavLink>
           {participanteId ? (
             <>
+              <NavLink to="/resultados">Enviar Resultados</NavLink>
               {isAdmin ? (
                 <NavLink to="/admin">Administração</NavLink>
               ) : (
