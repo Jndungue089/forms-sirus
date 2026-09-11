@@ -9,3 +9,11 @@
 body {
   margin: 0;
 }
+
+table.ranking-table {
+    backdrop-filter: blur(4px);
+}
+
+.tab {
+    backdrop-filter: blur(4px);
+}
