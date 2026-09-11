@@ -5,7 +5,7 @@ export default function RankingPage() {
     <div className="ranking-screen">
       <div className="ranking-screen-bg" aria-hidden="true" />
       <div className="ranking-screen-content">
-        <PainelEvento mostrarIds={false} mostrarParticipantes={false} />
+        <PainelEvento mostrarIds={false} mostrarEstatisticas={false} />
       </div>
     </div>
   );

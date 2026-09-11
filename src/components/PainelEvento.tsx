@@ -7,10 +7,10 @@ type Tab = "ranking" | "participantes" | "registros";
 
 interface PainelEventoProps {
   mostrarIds?: boolean;
-  mostrarParticipantes?: boolean;
+  mostrarEstatisticas?: boolean;
 }
 
-export default function PainelEvento({ mostrarIds = true, mostrarParticipantes = true }: PainelEventoProps) {
+export default function PainelEvento({ mostrarIds = true, mostrarEstatisticas = true }: PainelEventoProps) {
   const { participantes, ranking, eventoStats, historico } = useData();
   const [tab, setTab] = useState<Tab>("ranking");
 
@@ -24,22 +24,22 @@ export default function PainelEvento({ mostrarIds = true, mostrarParticipantes =
           <p className="hero-liga">{eventoStats.liga}</p>
           <h1>{eventoStats.nome}</h1>
         </div>
-        <div className="stats">
-          {mostrarParticipantes && (
+        {mostrarEstatisticas && (
+          <div className="stats">
             <div className="stat">
               <span className="stat-value">{fmt(participantes.length)}</span>
               <span className="stat-label">Participantes</span>
             </div>
-          )}
-          <div className="stat">
-            <span className="stat-value">{fmt(totalCortes)}</span>
-            <span className="stat-label">Cortes</span>
+            <div className="stat">
+              <span className="stat-value">{fmt(totalCortes)}</span>
+              <span className="stat-label">Cortes</span>
+            </div>
+            <div className="stat">
+              <span className="stat-value">{fmt(totalViews)}</span>
+              <span className="stat-label">Views</span>
+            </div>
           </div>
-          <div className="stat">
-            <span className="stat-value">{fmt(totalViews)}</span>
-            <span className="stat-label">Views</span>
-          </div>
-        </div>
+        )}
         <p className="atualizacao">Última atualização: {eventoStats.ultimaAtualizacao}</p>
       </header>
 
