@@ -9,6 +9,8 @@ export default function AdminConfiguracoesPage() {
     inscricoesAbertas,
     limiteParticipantes,
     inscricoesFechadasManualmente,
+    ocultarTop3,
+    bloqueioTotal,
     updateConfiguracoes,
     participantes,
   } = useData();
@@ -58,6 +60,24 @@ export default function AdminConfiguracoesPage() {
       await updateConfiguracoes({ inscricoesFechadasManualmente: !inscricoesFechadasManualmente });
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Não foi possível alterar o estado das inscrições.");
+    }
+  };
+
+  const alternarOcultarTop3 = async () => {
+    setErro(null);
+    try {
+      await updateConfiguracoes({ ocultarTop3: !ocultarTop3 });
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Não foi possível alterar a ocultação do Top 3.");
+    }
+  };
+
+  const alternarBloqueioTotal = async () => {
+    setErro(null);
+    try {
+      await updateConfiguracoes({ bloqueioTotal: !bloqueioTotal });
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Não foi possível alterar o bloqueio de acesso.");
     }
   };
 
@@ -150,6 +170,34 @@ export default function AdminConfiguracoesPage() {
             {inscricoesFechadasManualmente ? "Reabrir inscrições" : "Fechar inscrições agora"}
           </button>
         </form>
+      </div>
+
+      <div className="admin-section-head">
+        <h2>Suspense da Revelação</h2>
+      </div>
+      <div className="admin-settings-stack">
+        <div className="admin-settings">
+          <div className="admin-settings-status">
+            <span className={`badge${ocultarTop3 ? " badge-fechado" : ""}`}>
+              {ocultarTop3 ? "Top 3 oculto" : "Top 3 visível"}
+            </span>
+            <span className="hint">Esconde o nome e os números do Top 3 no painel público (Ranking e Registos).</span>
+          </div>
+          <button className="btn btn-secundario" type="button" onClick={alternarOcultarTop3}>
+            {ocultarTop3 ? "Revelar Top 3" : "Ocultar Top 3"}
+          </button>
+        </div>
+        <div className="admin-settings">
+          <div className="admin-settings-status">
+            <span className={`badge${bloqueioTotal ? " badge-fechado" : ""}`}>
+              {bloqueioTotal ? "Plataforma bloqueada" : "Plataforma acessível"}
+            </span>
+            <span className="hint">Bloqueia o acesso de todos exceto a administração, até desativares esta opção.</span>
+          </div>
+          <button className="btn btn-secundario" type="button" onClick={alternarBloqueioTotal}>
+            {bloqueioTotal ? "Reabrir plataforma" : "Bloquear plataforma"}
+          </button>
+        </div>
       </div>
 
       <div className="admin-section-head">

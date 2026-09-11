@@ -36,8 +36,13 @@ CREATE TABLE IF NOT EXISTS configuracoes (
   id INTEGER PRIMARY KEY DEFAULT 1,
   limite_participantes INTEGER,
   inscricoes_fechadas_manualmente BOOLEAN NOT NULL DEFAULT false,
+  ocultar_top3 BOOLEAN NOT NULL DEFAULT false,
+  bloqueio_total BOOLEAN NOT NULL DEFAULT false,
   CONSTRAINT configuracoes_singleton CHECK (id = 1)
 );
+
+ALTER TABLE configuracoes ADD COLUMN IF NOT EXISTS ocultar_top3 BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE configuracoes ADD COLUMN IF NOT EXISTS bloqueio_total BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS evento (
   id INTEGER PRIMARY KEY DEFAULT 1,

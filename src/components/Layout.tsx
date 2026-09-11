@@ -1,11 +1,13 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 
 export default function Layout() {
   const { participanteId, isAdmin, logout } = useAuth();
-  const { loading, error } = useData();
+  const { loading, error, bloqueioTotal } = useData();
   const navigate = useNavigate();
+  const location = useLocation();
+  const bloqueado = bloqueioTotal && !isAdmin && location.pathname !== "/login";
 
   const sair = () => {
     logout();
@@ -48,6 +50,20 @@ export default function Layout() {
             <h2>Não foi possível ligar ao servidor</h2>
             <p className="hint">{error}</p>
             <p className="hint">Confirma que o backend está a correr (npm run start em /server).</p>
+          </div>
+        </div>
+      ) : bloqueado ? (
+        <div className="page">
+          <div className="lockdown-screen">
+            <header className="hero">
+              <div className="hero-brand">
+                <p className="hero-liga">Liga de Cortes</p>
+                <h1>Resultados em breve</h1>
+              </div>
+            </header>
+            <p className="hint centro">
+              A plataforma está temporariamente indisponível enquanto preparamos a revelação final. Volta em breve!
+            </p>
           </div>
         </div>
       ) : (

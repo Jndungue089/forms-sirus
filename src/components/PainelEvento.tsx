@@ -8,14 +8,17 @@ type Tab = "ranking" | "participantes" | "registros";
 interface PainelEventoProps {
   mostrarIds?: boolean;
   mostrarEstatisticas?: boolean;
+  admin?: boolean;
 }
 
-export default function PainelEvento({ mostrarIds = true, mostrarEstatisticas = true }: PainelEventoProps) {
-  const { participantes, ranking, eventoStats, historico } = useData();
+export default function PainelEvento({ mostrarIds = true, mostrarEstatisticas = true, admin = true }: PainelEventoProps) {
+  const { participantes, ranking, eventoStats, historico, ocultarTop3 } = useData();
   const [tab, setTab] = useState<Tab>("ranking");
 
   const totalViews = ranking.reduce((acc, r) => acc + r.total, 0);
   const totalCortes = ranking.reduce((acc, r) => acc + r.conteudos, 0);
+  const suspenseAtivo = !admin && ocultarTop3;
+  const posOculta = (pos: number) => suspenseAtivo && pos <= 3;
 
   return (
     <div className="page">
@@ -55,6 +58,8 @@ export default function PainelEvento({ mostrarIds = true, mostrarEstatisticas = 
         </button>
       </nav>
 
+      {suspenseAtivo && <p className="suspense-banner">🔒 O TOP 3 será revelado em breve. Fica atento!</p>}
+
       <main className="painel-evento">
         <div className="painel-content">
           {tab === "ranking" && (
@@ -71,23 +76,34 @@ export default function PainelEvento({ mostrarIds = true, mostrarEstatisticas = 
                 </tr>
               </thead>
               <tbody>
-                {ranking.map((r) => (
-                  <tr key={r.id} className={r.pos <= 3 ? `pos-${r.pos}` : undefined}>
-                    <td className="pos" data-label="Pos.">
-                      {r.pos}º
-                    </td>
-                    <td className="nome" data-label="Participante">
-                      {r.nome}
-                    </td>
-                    <td data-label="Views TikTok">{fmt(r.viewsTiktok)}</td>
-                    <td data-label="Views YouTube">{fmt(r.viewsYoutube)}</td>
-                    <td data-label="Views Facebook">{fmt(r.viewsFacebook)}</td>
-                    <td className="total" data-label="Total">
-                      {fmt(r.total)}
-                    </td>
-                    <td data-label="Cortes">{r.conteudos}</td>
-                  </tr>
-                ))}
+                {ranking.map((r) => {
+                  const oculto = posOculta(r.pos);
+                  return (
+                    <tr key={r.id} className={r.pos <= 3 ? `pos-${r.pos}` : undefined}>
+                      <td className="pos" data-label="Pos.">
+                        {r.pos}º
+                      </td>
+                      <td className={`nome${oculto ? " valor-oculto" : ""}`} data-label="Participante">
+                        {oculto ? "???" : r.nome}
+                      </td>
+                      <td className={oculto ? "valor-oculto" : undefined} data-label="Views TikTok">
+                        {oculto ? "•••••" : fmt(r.viewsTiktok)}
+                      </td>
+                      <td className={oculto ? "valor-oculto" : undefined} data-label="Views YouTube">
+                        {oculto ? "•••••" : fmt(r.viewsYoutube)}
+                      </td>
+                      <td className={oculto ? "valor-oculto" : undefined} data-label="Views Facebook">
+                        {oculto ? "•••••" : fmt(r.viewsFacebook)}
+                      </td>
+                      <td className={`total${oculto ? " valor-oculto" : ""}`} data-label="Total">
+                        {oculto ? "•••••" : fmt(r.total)}
+                      </td>
+                      <td className={oculto ? "valor-oculto" : undefined} data-label="Cortes">
+                        {oculto ? "••" : r.conteudos}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -130,11 +146,12 @@ export default function PainelEvento({ mostrarIds = true, mostrarEstatisticas = 
               {participantes.map((p) => {
                 const linha = ranking.find((r) => r.id === p.id);
                 const h = historico[p.id];
+                const oculto = linha ? posOculta(linha.pos) : false;
                 return (
                   <div className="historico-card" key={p.id}>
                     <div className="historico-card-head">
-                      <span className="historico-nome">{p.nome}</span>
-                      {mostrarIds && <span className="historico-id">{p.id}</span>}
+                      <span className={`historico-nome${oculto ? " valor-oculto" : ""}`}>{oculto ? "???" : p.nome}</span>
+                      {mostrarIds && !oculto && <span className="historico-id">{p.id}</span>}
                     </div>
                     <div className="historico-stats">
                       <div className="historico-stat">
@@ -142,17 +159,21 @@ export default function PainelEvento({ mostrarIds = true, mostrarEstatisticas = 
                         <span className="historico-label">Vitórias</span>
                       </div>
                       <div className="historico-stat">
-                        <span className="historico-valor">
-                          {h?.melhorPosicao != null ? `${h.melhorPosicao}º` : linha ? `${linha.pos}º` : "—"}
+                        <span className={`historico-valor${oculto ? " valor-oculto" : ""}`}>
+                          {oculto ? "??" : h?.melhorPosicao != null ? `${h.melhorPosicao}º` : linha ? `${linha.pos}º` : "—"}
                         </span>
                         <span className="historico-label">Melhor posição</span>
                       </div>
                       <div className="historico-stat">
-                        <span className="historico-valor">{fmt(linha?.total ?? 0)}</span>
+                        <span className={`historico-valor${oculto ? " valor-oculto" : ""}`}>
+                          {oculto ? "•••••" : fmt(linha?.total ?? 0)}
+                        </span>
                         <span className="historico-label">Views</span>
                       </div>
                       <div className="historico-stat">
-                        <span className="historico-valor">{linha?.conteudos ?? 0}</span>
+                        <span className={`historico-valor${oculto ? " valor-oculto" : ""}`}>
+                          {oculto ? "••" : linha?.conteudos ?? 0}
+                        </span>
                         <span className="historico-label">Cortes</span>
                       </div>
                     </div>

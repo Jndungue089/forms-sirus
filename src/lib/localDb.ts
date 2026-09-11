@@ -57,7 +57,9 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS configuracoes (
     id INTEGER PRIMARY KEY,
     limite_participantes INTEGER,
-    inscricoes_fechadas_manualmente INTEGER NOT NULL DEFAULT 0
+    inscricoes_fechadas_manualmente INTEGER NOT NULL DEFAULT 0,
+    ocultar_top3 INTEGER NOT NULL DEFAULT 0,
+    bloqueio_total INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS evento (
@@ -193,6 +195,19 @@ function queryOne<T>(db: Database, sql: string, params: SqlParam[] = []): T | un
   return queryAll<T>(db, sql, params)[0];
 }
 
+// Bases já persistidas em localStorage de versões anteriores não ganham colunas novas
+// automaticamente (CREATE TABLE IF NOT EXISTS não altera tabelas existentes) — por isso
+// esta migração corre sempre, e adiciona só o que ainda não existir.
+function migrate(db: Database) {
+  const colunas = queryAll<{ name: string }>(db, "PRAGMA table_info(configuracoes)").map((c) => c.name);
+  if (!colunas.includes("ocultar_top3")) {
+    db.run("ALTER TABLE configuracoes ADD COLUMN ocultar_top3 INTEGER NOT NULL DEFAULT 0;");
+  }
+  if (!colunas.includes("bloqueio_total")) {
+    db.run("ALTER TABLE configuracoes ADD COLUMN bloqueio_total INTEGER NOT NULL DEFAULT 0;");
+  }
+}
+
 let dbInstance: Database | null = null;
 let initPromise: Promise<Database> | null = null;
 
@@ -211,6 +226,7 @@ async function createDb(): Promise<Database> {
     try {
       const db = new SQL.Database(base64ToBytes(saved));
       run(db, "PRAGMA foreign_keys = ON;");
+      migrate(db);
       return db;
     } catch {
       // dump corrompido/incompatível — recomeça do zero
@@ -220,6 +236,7 @@ async function createDb(): Promise<Database> {
   const db = new SQL.Database();
   db.run(SCHEMA);
   seed(db);
+  migrate(db);
   persist(db);
   return db;
 }
@@ -264,9 +281,14 @@ function proximoId(db: Database): string {
 }
 
 function getConfigStatus(db: Database): ConfiguracoesStatus {
-  const cfg = queryOne<{ limite_participantes: number | null; inscricoes_fechadas_manualmente: number }>(
+  const cfg = queryOne<{
+    limite_participantes: number | null;
+    inscricoes_fechadas_manualmente: number;
+    ocultar_top3: number;
+    bloqueio_total: number;
+  }>(
     db,
-    "SELECT limite_participantes, inscricoes_fechadas_manualmente FROM configuracoes WHERE id = 1"
+    "SELECT limite_participantes, inscricoes_fechadas_manualmente, ocultar_top3, bloqueio_total FROM configuracoes WHERE id = 1"
   )!;
   const total = queryOne<{ total: number }>(db, "SELECT COUNT(*) AS total FROM participantes")!.total;
   const limiteAtingido = cfg.limite_participantes !== null && total >= cfg.limite_participantes;
@@ -275,6 +297,8 @@ function getConfigStatus(db: Database): ConfiguracoesStatus {
     inscricoesFechadasManualmente: !!cfg.inscricoes_fechadas_manualmente,
     totalParticipantes: total,
     inscricoesAbertas: !cfg.inscricoes_fechadas_manualmente && !limiteAtingido,
+    ocultarTop3: !!cfg.ocultar_top3,
+    bloqueioTotal: !!cfg.bloqueio_total,
   };
 }
 
@@ -462,16 +486,26 @@ export const localApi = {
     return getConfigStatus(db);
   },
 
-  async updateConfiguracoes(data: Partial<Pick<ConfiguracoesStatus, "limiteParticipantes" | "inscricoesFechadasManualmente">>) {
+  async updateConfiguracoes(
+    data: Partial<Pick<ConfiguracoesStatus, "limiteParticipantes" | "inscricoesFechadasManualmente" | "ocultarTop3" | "bloqueioTotal">>
+  ) {
     const db = await getDb();
-    const atual = queryOne<{ limite_participantes: number | null; inscricoes_fechadas_manualmente: number }>(
+    const atual = queryOne<{
+      limite_participantes: number | null;
+      inscricoes_fechadas_manualmente: number;
+      ocultar_top3: number;
+      bloqueio_total: number;
+    }>(db, "SELECT limite_participantes, inscricoes_fechadas_manualmente, ocultar_top3, bloqueio_total FROM configuracoes WHERE id = 1")!;
+    run(
       db,
-      "SELECT limite_participantes, inscricoes_fechadas_manualmente FROM configuracoes WHERE id = 1"
-    )!;
-    run(db, "UPDATE configuracoes SET limite_participantes = ?, inscricoes_fechadas_manualmente = ? WHERE id = 1", [
-      data.limiteParticipantes !== undefined ? data.limiteParticipantes : atual.limite_participantes,
-      data.inscricoesFechadasManualmente !== undefined ? (data.inscricoesFechadasManualmente ? 1 : 0) : atual.inscricoes_fechadas_manualmente,
-    ]);
+      "UPDATE configuracoes SET limite_participantes = ?, inscricoes_fechadas_manualmente = ?, ocultar_top3 = ?, bloqueio_total = ? WHERE id = 1",
+      [
+        data.limiteParticipantes !== undefined ? data.limiteParticipantes : atual.limite_participantes,
+        data.inscricoesFechadasManualmente !== undefined ? (data.inscricoesFechadasManualmente ? 1 : 0) : atual.inscricoes_fechadas_manualmente,
+        data.ocultarTop3 !== undefined ? (data.ocultarTop3 ? 1 : 0) : atual.ocultar_top3,
+        data.bloqueioTotal !== undefined ? (data.bloqueioTotal ? 1 : 0) : atual.bloqueio_total,
+      ]
+    );
     persist(db);
     return getConfigStatus(db);
   },

@@ -23,6 +23,8 @@ interface DataContextValue {
   inscricoesAbertas: boolean;
   limiteParticipantes: number | null;
   inscricoesFechadasManualmente: boolean;
+  ocultarTop3: boolean;
+  bloqueioTotal: boolean;
   getParticipante: (id: string) => Participante | undefined;
   addParticipante: (p: NovoParticipante) => Promise<string>;
   updateParticipante: (id: string, patch: Partial<NovoParticipante> & { status?: Participante["status"] }) => Promise<void>;
@@ -31,7 +33,12 @@ interface DataContextValue {
   updateRegistro: (id: number, patch: Partial<NovoRegistro>) => Promise<void>;
   deleteRegistro: (id: number) => Promise<void>;
   updateHistorico: (participanteId: string, h: HistoricoParticipante) => Promise<void>;
-  updateConfiguracoes: (patch: { limiteParticipantes?: number | null; inscricoesFechadasManualmente?: boolean }) => Promise<void>;
+  updateConfiguracoes: (patch: {
+    limiteParticipantes?: number | null;
+    inscricoesFechadasManualmente?: boolean;
+    ocultarTop3?: boolean;
+    bloqueioTotal?: boolean;
+  }) => Promise<void>;
   updateEventoStats: (patch: Partial<EventoStats>) => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -46,6 +53,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [limiteParticipantes, setLimiteParticipantes] = useState<number | null>(null);
   const [inscricoesFechadasManualmente, setInscricoesFechadasManualmente] = useState(false);
   const [inscricoesAbertas, setInscricoesAbertas] = useState(true);
+  const [ocultarTop3, setOcultarTop3] = useState(false);
+  const [bloqueioTotal, setBloqueioTotal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,6 +73,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setLimiteParticipantes(cfg.limiteParticipantes);
     setInscricoesFechadasManualmente(cfg.inscricoesFechadasManualmente);
     setInscricoesAbertas(cfg.inscricoesAbertas);
+    setOcultarTop3(cfg.ocultarTop3);
+    setBloqueioTotal(cfg.bloqueioTotal);
     setError(null);
   };
 
@@ -112,7 +123,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await refresh();
   };
 
-  const updateConfiguracoes = async (patch: { limiteParticipantes?: number | null; inscricoesFechadasManualmente?: boolean }) => {
+  const updateConfiguracoes = async (patch: {
+    limiteParticipantes?: number | null;
+    inscricoesFechadasManualmente?: boolean;
+    ocultarTop3?: boolean;
+    bloqueioTotal?: boolean;
+  }) => {
     await api.updateConfiguracoes(patch);
     await refresh();
   };
@@ -164,6 +180,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         inscricoesAbertas,
         limiteParticipantes,
         inscricoesFechadasManualmente,
+        ocultarTop3,
+        bloqueioTotal,
         getParticipante,
         addParticipante,
         updateParticipante,

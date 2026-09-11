@@ -68,4 +68,6 @@ export interface ConfiguracoesStatus {
   inscricoesFechadasManualmente: boolean;
   totalParticipantes: number;
   inscricoesAbertas: boolean;
+  ocultarTop3: boolean;
+  bloqueioTotal: boolean;
 }
